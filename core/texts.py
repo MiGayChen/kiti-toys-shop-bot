@@ -4,6 +4,6 @@ CHOOSE_CATEGORY = "Выберите категорию"
 
 CART_EMPTY = "Товар не найден"
 
-ORDER_CONFIRMED = ""
+ORDER_CONFIRMED = "Выберите товар"
 
 BUT_HELP = "Описание бота и его функций"

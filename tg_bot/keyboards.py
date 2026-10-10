@@ -25,3 +25,7 @@ def products_keyboard(products):
     rows.append([InlineKeyboardButton(BUT_BACK, callback_data="back:cats")])
 
     return InlineKeyboardMarkup(rows)
+
+def product_card_keyboard(category_id):
+    button = InlineKeyboardButton(BUT_BACK, callback_data=f"cat:{category_id}")
+    return InlineKeyboardMarkup([[button]])

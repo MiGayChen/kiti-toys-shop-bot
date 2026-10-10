@@ -11,3 +11,5 @@ BUT_HELP = "Описание бота и его функций"
 CHOOSE_PRODUCT = "Выберите товар:"
 
 BUT_BACK = "Назад"
+
+PRODUCT_NOT_FOUND = "Товар не найден"

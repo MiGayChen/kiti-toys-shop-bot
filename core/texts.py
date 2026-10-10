@@ -9,3 +9,5 @@ ORDER_CONFIRMED = "Выберите товар"
 BUT_HELP = "Описание бота и его функций"
 
 CHOOSE_PRODUCT = "Выберите товар:"
+
+BUT_BACK = "Назад"

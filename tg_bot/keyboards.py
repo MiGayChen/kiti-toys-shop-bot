@@ -1,4 +1,5 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from core.texts import BUT_BACK
 
 
 def categories_keyboard(categories):
@@ -21,4 +22,6 @@ def products_keyboard(products):
             callback_data=f"prod:{product['id']}",
         )
         rows.append([button])
+    rows.append([InlineKeyboardButton(BUT_BACK, callback_data="back:cats")])
+
     return InlineKeyboardMarkup(rows)

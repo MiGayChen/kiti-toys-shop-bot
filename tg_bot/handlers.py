@@ -25,3 +25,12 @@ async def show_products(update, context):
     keyboard = products_keyboard(products)
 
     await query.edit_message_text(text, reply_markup=keyboard)
+
+async def back_to_categories(update, context):
+    query = update.callback_query
+    await query.answer()
+
+    categories = await repository.get_categories()
+    keyboard = categories_keyboard(categories)
+
+    await query.edit_message_text(CHOOSE_CATEGORY, reply_markup=keyboard)

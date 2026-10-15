@@ -1,4 +1,4 @@
-TRUNCATE products, categories RESTART IDENTITY;
+TRUNCATE cart_items, products, categories RESTART IDENTITY;
 
 INSERT INTO categories (name) VALUES ('Мячики'), ('Мышки');
 

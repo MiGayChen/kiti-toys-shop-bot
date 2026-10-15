@@ -1,8 +1,9 @@
-CREATE TABLE categories (
+CREATE TABLE IF NOT EXISTS categories (
     id   INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name TEXT NOT NULL UNIQUE
 );
-CREATE TABLE products (
+
+CREATE TABLE IF NOT EXISTS products (
     id          INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     category_id INTEGER NOT NULL REFERENCES categories(id),
     name        TEXT NOT NULL,
@@ -11,7 +12,8 @@ CREATE TABLE products (
     image       TEXT,
     is_active   BOOLEAN NOT NULL DEFAULT TRUE
 );
-CREATE TABLE users (
+
+CREATE TABLE IF NOT EXISTS users (
     id               INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     platform         TEXT NOT NULL,
     platform_user_id BIGINT NOT NULL,
@@ -19,7 +21,8 @@ CREATE TABLE users (
     created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
     UNIQUE (platform, platform_user_id)
 );
-CREATE TABLE cart_items (
+
+CREATE TABLE IF NOT EXISTS cart_items (
     user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     product_id INTEGER NOT NULL REFERENCES products(id),
     qty        INTEGER NOT NULL CHECK (qty > 0),

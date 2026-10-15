@@ -2,7 +2,13 @@ WELCOME = "Вас приветствует магазин кошачьих иг�
 
 CHOOSE_CATEGORY = "Выберите категорию"
 
-CART_EMPTY = "Товар не найден"
+CART_EMPTY = "Корзина пуста"
+
+BUT_ADD_TO_CART = "В корзину"
+
+BUT_CART = "Корзина"
+
+ADDED_TO_CART = "Добавлено в корзину"
 
 ORDER_CONFIRMED = "Выберите товар"
 

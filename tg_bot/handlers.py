@@ -2,7 +2,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from core import repository
-from core.texts import WELCOME, CHOOSE_CATEGORY, CHOOSE_PRODUCT, PRODUCT_NOT_FOUND
+from core.texts import WELCOME, CHOOSE_CATEGORY, CHOOSE_PRODUCT, PRODUCT_NOT_FOUND, ADDED_TO_CART
 from core.formatting import format_products_list, format_product_card
 from tg_bot.keyboards import categories_keyboard, products_keyboard, product_card_keyboard
 
@@ -47,5 +47,21 @@ async def show_product_card(update, context):
         return
 
     text = format_product_card(product)
-    keyboard = product_card_keyboard(product["category_id"])
+    keyboard = product_card_keyboard(product["id"], product["category_id"])
     await query.edit_message_text(text, reply_markup=keyboard)
+
+async def add_to_cart_button(update, context):
+    query = update.callback_query
+
+    product_id = int(query.data.split(":")[1])
+    product = await repository.get_product(product_id)
+
+    if product is None:
+        await query.answer(PRODUCT_NOT_FOUND, show_alert=True)
+        return
+
+    user = update.effective_user
+    user_id = await repository.get_or_create_user("tg", user.id, user.full_name)
+    await repository.add_to_cart(user_id, product_id)
+
+    await query.answer(ADDED_TO_CART)

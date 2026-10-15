@@ -26,3 +26,47 @@ async def get_products(category_id):
             category_id,
         )
     return [dict(r) for r in rows]
+
+async def get_or_create_user(platform, platform_user_id, name):
+    async with db.pool.acquire() as conn:
+        return await conn.fetchval(
+            "INSERT INTO users (platform, platform_user_id, name) "
+            "VALUES ($1, $2, $3) "
+            "ON CONFLICT (platform, platform_user_id) "
+            "DO UPDATE SET name = EXCLUDED.name "
+            "RETURNING id",
+            platform, platform_user_id, name,
+        )
+
+
+async def add_to_cart(user_id, product_id):
+    async with db.pool.acquire() as conn:
+        await conn.execute(
+            "INSERT INTO cart_items (user_id, product_id, qty) "
+            "VALUES ($1, $2, 1) "
+            "ON CONFLICT (user_id, product_id) "
+            "DO UPDATE SET qty = cart_items.qty + 1",
+            user_id, product_id,
+        )
+
+
+async def get_cart(user_id):
+    async with db.pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT p.id AS product_id, p.name, p.price, ci.qty, "
+            "p.price * ci.qty AS subtotal "
+            "FROM cart_items ci "
+            "JOIN products p ON p.id = ci.product_id "
+            "WHERE ci.user_id = $1 AND p.is_active = TRUE "
+            "ORDER BY p.id",
+            user_id,
+        )
+    return [dict(r) for r in rows]
+
+
+async def clear_cart(user_id):
+    async with db.pool.acquire() as conn:
+        await conn.execute(
+            "DELETE FROM cart_items WHERE user_id = $1",
+            user_id,
+        )

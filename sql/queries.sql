@@ -18,3 +18,10 @@ ORDER BY id;
 SELECT id, category_id, name, description, price, image
 FROM products
 WHERE id = 2 AND is_active = TRUE;
+
+-- get_or_create_user(platform, platform_user_id, name): найти или создать пользователя, вернуть его id
+-- ON CONFLICT: пара (platform, platform_user_id) уникальна, повторный /start не создаёт дубль
+INSERT INTO users (platform, platform_user_id, name)
+VALUES ('tg', 123456789, 'Тест')
+ON CONFLICT (platform, platform_user_id) DO UPDATE SET name = EXCLUDED.name
+RETURNING id;

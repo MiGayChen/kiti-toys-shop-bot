@@ -2,9 +2,9 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from core import repository
-from core.texts import WELCOME, CHOOSE_CATEGORY, CHOOSE_PRODUCT, PRODUCT_NOT_FOUND, ADDED_TO_CART
-from core.formatting import format_products_list, format_product_card
-from tg_bot.keyboards import categories_keyboard, products_keyboard, product_card_keyboard
+from core.texts import WELCOME, CHOOSE_CATEGORY, CHOOSE_PRODUCT, PRODUCT_NOT_FOUND, ADDED_TO_CART, CART_EMPTY, CART_CLEARED
+from core.formatting import format_products_list, format_product_card, format_cart
+from tg_bot.keyboards import categories_keyboard, products_keyboard, product_card_keyboard, cart_keyboard
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 	categories = await repository.get_categories()
@@ -65,3 +65,28 @@ async def add_to_cart_button(update, context):
     await repository.add_to_cart(user_id, product_id)
 
     await query.answer(ADDED_TO_CART)
+
+async def show_cart(update, context):
+    query = update.callback_query
+    await query.answer()
+
+    user = update.effective_user
+    user_id = await repository.get_or_create_user("tg", user.id, user.full_name)
+    items = await repository.get_cart(user_id)
+
+    if not items:
+        await query.edit_message_text(CART_EMPTY, reply_markup=cart_keyboard(False))
+        return
+
+    await query.edit_message_text(format_cart(items), reply_markup=cart_keyboard(True))
+
+
+async def clear_cart_button(update, context):
+    query = update.callback_query
+    await query.answer(CART_CLEARED)
+
+    user = update.effective_user
+    user_id = await repository.get_or_create_user("tg", user.id, user.full_name)
+    await repository.clear_cart(user_id)
+
+    await query.edit_message_text(CART_EMPTY, reply_markup=cart_keyboard(False))

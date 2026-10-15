@@ -19,3 +19,13 @@ CHOOSE_PRODUCT = "Выберите товар:"
 BUT_BACK = "Назад"
 
 PRODUCT_NOT_FOUND = "Товар не найден"
+
+CART_TITLE = "Ваша корзина:"
+
+CART_TOTAL = "Итого:"
+
+BUT_CLEAR_CART = "Очистить корзину"
+
+BUT_TO_CATALOG = "В каталог"
+
+CART_CLEARED = "Корзина очищена"

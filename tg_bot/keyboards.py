@@ -1,5 +1,5 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from core.texts import BUT_BACK, BUT_ADD_TO_CART, BUT_CART
+from core.texts import BUT_BACK, BUT_ADD_TO_CART, BUT_CART, BUT_CLEAR_CART, BUT_TO_CATALOG
 
 
 def categories_keyboard(categories):
@@ -32,4 +32,11 @@ def product_card_keyboard(product_id, category_id):
         [InlineKeyboardButton(BUT_CART, callback_data="cart:view")],
         [InlineKeyboardButton(BUT_BACK, callback_data=f"cat:{category_id}")],
     ]
+    return InlineKeyboardMarkup(rows)
+
+def cart_keyboard(has_items):
+    rows = []
+    if has_items:
+        rows.append([InlineKeyboardButton(BUT_CLEAR_CART, callback_data="cart:clear")])
+    rows.append([InlineKeyboardButton(BUT_TO_CATALOG, callback_data="back:cats")])
     return InlineKeyboardMarkup(rows)

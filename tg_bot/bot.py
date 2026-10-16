@@ -18,11 +18,18 @@ async def on_startup(application):
 async def on_shutdown(application):
     await db.close_pool()
 
+async def on_error(update, context):
+    logging.error("Ошибка в обработчике", exc_info=context.error)
+
 
 def run_bot():
     application = (
         Application.builder()
         .token(BOT_TOKEN)
+        .connect_timeout(20)
+        .read_timeout(20)
+        .write_timeout(20)
+        .pool_timeout(20)
         .post_init(on_startup)
         .post_shutdown(on_shutdown)
         .build()
@@ -34,4 +41,5 @@ def run_bot():
     application.add_handler(CallbackQueryHandler(add_to_cart_button, pattern="^add:"))
     application.add_handler(CallbackQueryHandler(show_cart, pattern="^cart:view$"))
     application.add_handler(CallbackQueryHandler(clear_cart_button, pattern="^cart:clear$"))
+    application.add_error_handler(on_error)
     application.run_polling()

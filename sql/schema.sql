@@ -28,3 +28,21 @@ CREATE TABLE IF NOT EXISTS cart_items (
     qty        INTEGER NOT NULL CHECK (qty > 0),
     PRIMARY KEY (user_id, product_id)
 );
+
+CREATE TABLE IF NOT EXISTS orders (
+    id         INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id    INTEGER NOT NULL REFERENCES users(id),
+    status     TEXT NOT NULL DEFAULT 'new'
+               CHECK (status IN ('new', 'confirmed', 'shipped', 'done', 'cancelled')),
+    total      INTEGER NOT NULL CHECK (total >= 0),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS order_items (
+    id         INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    order_id   INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    product_id INTEGER REFERENCES products(id),
+    name       TEXT NOT NULL,
+    price      INTEGER NOT NULL CHECK (price >= 0),
+    qty        INTEGER NOT NULL CHECK (qty > 0)
+);

@@ -70,3 +70,33 @@ async def clear_cart(user_id):
             "DELETE FROM cart_items WHERE user_id = $1",
             user_id,
         )
+
+async def create_order(user_id):
+    async with db.pool.acquire() as conn:
+        async with conn.transaction():
+            order = await conn.fetchrow(
+                "INSERT INTO orders (user_id, total) "
+                "SELECT $1::int, SUM(p.price * ci.qty) "
+                "FROM cart_items ci "
+                "JOIN products p ON p.id = ci.product_id "
+                "WHERE ci.user_id = $1 AND p.is_active = TRUE "
+                "HAVING COUNT(*) > 0 "
+                "RETURNING id, total",
+                user_id,
+            )
+            if order is None:
+                return None
+
+            await conn.execute(
+                "INSERT INTO order_items (order_id, product_id, name, price, qty) "
+                "SELECT $1, p.id, p.name, p.price, ci.qty "
+                "FROM cart_items ci "
+                "JOIN products p ON p.id = ci.product_id "
+                "WHERE ci.user_id = $2 AND p.is_active = TRUE",
+                order["id"], user_id,
+            )
+            await conn.execute(
+                "DELETE FROM cart_items WHERE user_id = $1",
+                user_id,
+            )
+    return dict(order)

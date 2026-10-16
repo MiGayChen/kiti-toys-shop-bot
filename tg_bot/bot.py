@@ -4,7 +4,7 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler
 
 from core import db
 from core.config import BOT_TOKEN
-from tg_bot.handlers import start, show_products, back_to_categories, show_product_card, add_to_cart_button, show_cart, clear_cart_button
+from tg_bot.handlers import start, show_products, back_to_categories, show_product_card, add_to_cart_button, show_cart, clear_cart_button, checkout_button
 
 
 logging.basicConfig(level=logging.INFO)
@@ -41,5 +41,6 @@ def run_bot():
     application.add_handler(CallbackQueryHandler(add_to_cart_button, pattern="^add:"))
     application.add_handler(CallbackQueryHandler(show_cart, pattern="^cart:view$"))
     application.add_handler(CallbackQueryHandler(clear_cart_button, pattern="^cart:clear$"))
+    application.add_handler(CallbackQueryHandler(checkout_button, pattern="^order:create$"))
     application.add_error_handler(on_error)
     application.run_polling()

@@ -10,7 +10,9 @@ BUT_CART = "Корзина"
 
 ADDED_TO_CART = "Добавлено в корзину"
 
-ORDER_CONFIRMED = "Выберите товар"
+BUT_CHECKOUT = "Оформить заказ"
+
+ORDER_CREATED = "Заказ №{order_id} оформлен.\nСумма: {total}\nМы свяжемся с вами в Telegram."
 
 BUT_HELP = "Описание бота и его функций"
 

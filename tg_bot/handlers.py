@@ -1,8 +1,11 @@
+import logging
+
 from telegram import Update
 from telegram.ext import ContextTypes
 
 from core import repository
-from core.texts import WELCOME, CHOOSE_CATEGORY, CHOOSE_PRODUCT, PRODUCT_NOT_FOUND, ADDED_TO_CART, CART_EMPTY, CART_CLEARED, ORDER_CREATED
+from core.config import OWNER_ID
+from core.texts import WELCOME, CHOOSE_CATEGORY, CHOOSE_PRODUCT, PRODUCT_NOT_FOUND, ADDED_TO_CART, CART_EMPTY, CART_CLEARED, ORDER_CREATED, OWNER_NEW_ORDER
 from core.formatting import format_products_list, format_product_card, format_cart, format_price
 from tg_bot.keyboards import categories_keyboard, products_keyboard, product_card_keyboard, cart_keyboard
 
@@ -108,3 +111,15 @@ async def checkout_button(update, context):
         total=format_price(order["total"]),
     )
     await query.edit_message_text(text, reply_markup=cart_keyboard(False))
+    if OWNER_ID:
+        try:
+            await context.bot.send_message(
+                chat_id=OWNER_ID,
+                text=OWNER_NEW_ORDER.format(
+                    order_id=order["id"],
+                    name=user.full_name,
+                    total=format_price(order["total"]),
+                ),
+            )
+        except Exception:
+            logging.exception("Не удалось уведомить владельца")

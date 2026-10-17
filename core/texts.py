@@ -31,3 +31,5 @@ BUT_CLEAR_CART = "Очистить корзину"
 BUT_TO_CATALOG = "В каталог"
 
 CART_CLEARED = "Корзина очищена"
+
+OWNER_NEW_ORDER = "Новый заказ №{order_id}\nПокупатель: {name}\nСумма: {total}"

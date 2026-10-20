@@ -9,7 +9,7 @@ from telegram.ext import (
 
 from core import repository
 from core.config import ADMIN_IDS
-from core.formatting import format_price, format_product_card, parse_price
+from core.formatting import format_price, format_product_card, format_order, parse_price
 from core.texts import (
     ADMIN_PANEL,
     BUT_ADMIN_PRODUCTS,
@@ -32,6 +32,13 @@ from core.texts import (
     ADD_NO_CATEGORY,
     ADD_CONFIRM,
     ADD_DONE,
+    ORDER_STATUS_LABELS,
+    BUT_ADMIN_ORDERS,
+    BUT_ORDERS_BACK,
+    ADMIN_ORDERS_TITLE,
+    ADMIN_NO_ORDERS,
+    ORDER_NOT_FOUND,
+    ORDER_STATUS_CHANGED,
 )
 
 NAME, DESCRIPTION, PRICE, CATEGORY, CONFIRM = range(5)
@@ -45,6 +52,7 @@ def panel_keyboard():
     rows = [
         [InlineKeyboardButton(BUT_ADMIN_PRODUCTS, callback_data="admin:products")],
         [InlineKeyboardButton(BUT_ADMIN_ADD, callback_data="admin:add")],
+        [InlineKeyboardButton(BUT_ADMIN_ORDERS, callback_data="admin:orders")],
     ]
     return InlineKeyboardMarkup(rows)
 
@@ -256,3 +264,80 @@ def add_product_conversation():
             CallbackQueryHandler(add_cancel, pattern="^admin:cancel$"),
         ],
     )
+
+def orders_keyboard(orders):
+    rows = []
+    for order in orders:
+        label = ORDER_STATUS_LABELS.get(order["status"], order["status"])
+        name = order["name"] or "—"
+        text = f"№{order['id']} · {label} · {format_price(order['total'])} · {name}"
+        rows.append([InlineKeyboardButton(text, callback_data=f"admin:order:{order['id']}")])
+    rows.append([InlineKeyboardButton(BUT_ADMIN_BACK, callback_data="admin:panel")])
+    return InlineKeyboardMarkup(rows)
+
+
+def order_card_keyboard(order):
+    rows = []
+    for status, label in ORDER_STATUS_LABELS.items():
+        if status != order["status"]:
+            rows.append([InlineKeyboardButton(
+                f"→ {label}",
+                callback_data=f"admin:status:{order['id']}:{status}",
+            )])
+    rows.append([InlineKeyboardButton(BUT_ORDERS_BACK, callback_data="admin:orders")])
+    return InlineKeyboardMarkup(rows)
+
+
+async def render_order(query, order_id):
+    order = await repository.get_order(order_id)
+    if order is None:
+        return False
+    items = await repository.get_order_items(order_id)
+    await query.edit_message_text(
+        format_order(order, items),
+        reply_markup=order_card_keyboard(order),
+    )
+    return True
+
+
+async def admin_orders(update, context):
+    query = update.callback_query
+    await query.answer()
+    if not is_admin(update):
+        return
+
+    orders = await repository.get_open_orders()
+    text = ADMIN_ORDERS_TITLE if orders else ADMIN_NO_ORDERS
+    await query.edit_message_text(text, reply_markup=orders_keyboard(orders))
+
+
+async def admin_order(update, context):
+    query = update.callback_query
+    await query.answer()
+    if not is_admin(update):
+        return
+
+    order_id = int(query.data.split(":")[2])
+    if not await render_order(query, order_id):
+        await query.edit_message_text(ORDER_NOT_FOUND, reply_markup=orders_keyboard([]))
+
+
+async def admin_status(update, context):
+    query = update.callback_query
+    if not is_admin(update):
+        await query.answer()
+        return
+
+    _, _, order_id, status = query.data.split(":")
+    order_id = int(order_id)
+    if status not in ORDER_STATUS_LABELS:
+        await query.answer()
+        return
+
+    result = await repository.set_order_status(order_id, status)
+    if result is None:
+        await query.answer(ORDER_NOT_FOUND, show_alert=True)
+        return
+
+    await query.answer(ORDER_STATUS_CHANGED)
+    await render_order(query, order_id)

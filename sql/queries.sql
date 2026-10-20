@@ -83,3 +83,33 @@ WHERE ci.user_id = 1 AND p.is_active = TRUE;
 DELETE FROM cart_items WHERE user_id = 1;
 
 COMMIT;
+
+-- get_open_orders(): заказы в работе (новые и подтверждённые), сначала свежие
+-- JOIN users: берём имя покупателя; LIMIT 10: в админке показываем не больше десяти
+SELECT o.id, o.status, o.total, o.created_at, u.name
+FROM orders o
+JOIN users u ON u.id = o.user_id
+WHERE o.status IN ('new', 'confirmed')
+ORDER BY o.created_at DESC
+LIMIT 10;
+
+-- get_order_items(order_id): состав одного заказа
+-- name и price взяты из копии в order_items, а не из каталога: цены в старых заказах не меняются
+SELECT name, price, qty, price * qty AS subtotal
+FROM order_items
+WHERE order_id = 3
+ORDER BY id;
+
+-- set_order_status(order_id, status): сменить статус заказа
+-- Допустимы только new, confirmed, shipped, done, cancelled: остальное отклонит CHECK в базе
+-- RETURNING отдаёт новое состояние; если заказа нет, вернётся 0 строк (в Python это None)
+UPDATE orders
+SET status = 'confirmed'
+WHERE id = 3
+RETURNING id, status;
+
+-- get_order(order_id): шапка одного заказа
+SELECT o.id, o.status, o.total, o.created_at, u.name
+FROM orders o
+JOIN users u ON u.id = o.user_id
+WHERE o.id = 3;

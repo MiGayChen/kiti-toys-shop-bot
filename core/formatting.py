@@ -1,5 +1,5 @@
 import re
-from core.texts import CART_TITLE, CART_TOTAL
+from core.texts import CART_TITLE, CART_TOTAL, ORDER_STATUS_LABELS, ORDER_CARD_HEAD
 
 def format_price(price):
 	rub, kop = divmod(price, 100)
@@ -39,3 +39,19 @@ def parse_price(text):
     if price <= 0 or price > 100_000_000:
         return None
     return price
+
+def format_order(order, items):
+    head = ORDER_CARD_HEAD.format(
+        order_id=order["id"],
+        status=ORDER_STATUS_LABELS.get(order["status"], order["status"]),
+        name=order["name"] or "—",
+        created=order["created_at"].astimezone().strftime("%d.%m.%Y %H:%M"),
+    )
+    lines = [head, ""]
+    for item in items:
+        lines.append(
+            f"{item['name']} × {item['qty']} — {format_price(item['subtotal'])}"
+        )
+    lines.append("")
+    lines.append(f"{CART_TOTAL} {format_price(order['total'])}")
+    return "\n".join(lines)

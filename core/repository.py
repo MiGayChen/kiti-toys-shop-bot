@@ -127,3 +127,50 @@ async def add_product(category_id, name, description, price):
             "RETURNING id ",
             category_id, name, description, price,
         )
+
+async def get_open_orders():
+    async with db.pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT o.id, o.status, o.total, o.created_at, u.name "
+            "FROM orders o "
+            "JOIN users u ON u.id = o.user_id "
+            "WHERE o.status IN ('new', 'confirmed') "
+            "ORDER BY o.created_at DESC "
+            "LIMIT 10"
+        )
+    return [dict(r) for r in rows]
+
+
+async def get_order(order_id):
+    async with db.pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT o.id, o.status, o.total, o.created_at, u.name "
+            "FROM orders o "
+            "JOIN users u ON u.id = o.user_id "
+            "WHERE o.id = $1",
+            order_id,
+        )
+    return dict(row) if row else None
+
+
+async def get_order_items(order_id):
+    async with db.pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT name, price, qty, price * qty AS subtotal "
+            "FROM order_items "
+            "WHERE order_id = $1 "
+            "ORDER BY id",
+            order_id,
+        )
+    return [dict(r) for r in rows]
+
+
+async def set_order_status(order_id, status):
+    async with db.pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "UPDATE orders SET status = $2 "
+            "WHERE id = $1 "
+            "RETURNING id, status",
+            order_id, status,
+        )
+    return dict(row) if row else None

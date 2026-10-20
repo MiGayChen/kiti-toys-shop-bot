@@ -75,3 +75,25 @@ ADD_NO_CATEGORY = "Категория не найдена"
 ADD_CONFIRM = "Проверьте карточку нового товара:\n\n{card}\n\nКатегория: {category}"
 
 ADD_DONE = "Товар добавлен (№{product_id}). Он уже на витрине."
+
+ORDER_STATUS_LABELS = {
+    "new": "Новый",
+    "confirmed": "Подтверждён",
+    "shipped": "Отправлен",
+    "done": "Выдан",
+    "cancelled": "Отменён",
+}
+
+BUT_ADMIN_ORDERS = "Заказы"
+
+BUT_ORDERS_BACK = "К списку заказов"
+
+ADMIN_ORDERS_TITLE = "Заказы в работе. Нажмите на заказ, чтобы открыть:"
+
+ADMIN_NO_ORDERS = "Заказов в работе нет"
+
+ORDER_NOT_FOUND = "Заказ не найден"
+
+ORDER_STATUS_CHANGED = "Статус изменён"
+
+ORDER_CARD_HEAD = "Заказ №{order_id}\nСтатус: {status}\nПокупатель: {name}\nСоздан: {created}"

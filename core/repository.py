@@ -118,3 +118,12 @@ async def toggle_product(product_id):
             product_id,
         )
     return dict(row) if row else None
+
+async def add_product(category_id, name, description, price):
+    async with db.pool.acquire() as conn:
+        return await conn.fetchval(
+            "INSERT INTO products (category_id, name, description, price) "
+            "VALUES ($1, $2, $3, $4) "
+            "RETURNING id ",
+            category_id, name, description, price,
+        )

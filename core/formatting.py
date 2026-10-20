@@ -1,3 +1,4 @@
+import re
 from core.texts import CART_TITLE, CART_TOTAL
 
 def format_price(price):
@@ -28,3 +29,13 @@ def format_cart(items):
     lines.append("")
     lines.append(f"{CART_TOTAL} {format_price(total)}")
     return "\n".join(lines)
+
+def parse_price(text):
+    text = text.strip().replace(",", ".")
+    if not re.fullmatch(r"[0-9]+(\.[0-9]{1,2})?", text):
+        return None
+    rub, _, kop = text.partition(".")
+    price = int(rub) * 100 + int(kop.ljust(2, "0") or 0)
+    if price <= 0 or price > 100_000_000:
+        return None
+    return price

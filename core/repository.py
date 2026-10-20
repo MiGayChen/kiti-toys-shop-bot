@@ -11,7 +11,7 @@ async def get_product(product_id):
     async with db.pool.acquire() as conn:
         row = await conn.fetchrow(
             "SELECT id, category_id, name, description, price, image "
-            "FROM products WHERE id = $1 AND is_active = TRUE",
+            "FROM products WHERE id = $1 AND is_active = TRUE ",
             product_id,
         )
     return dict(row) if row else None
@@ -22,7 +22,7 @@ async def get_products(category_id):
         rows = await conn.fetch(
             "SELECT id, category_id, name, description, price, image "
             "FROM products WHERE category_id = $1 AND is_active = TRUE "
-            "ORDER BY id",
+            "ORDER BY id ",
             category_id,
         )
     return [dict(r) for r in rows]
@@ -45,7 +45,7 @@ async def add_to_cart(user_id, product_id):
             "INSERT INTO cart_items (user_id, product_id, qty) "
             "VALUES ($1, $2, 1) "
             "ON CONFLICT (user_id, product_id) "
-            "DO UPDATE SET qty = cart_items.qty + 1",
+            "DO UPDATE SET qty = cart_items.qty + 1 ",
             user_id, product_id,
         )
 
@@ -81,7 +81,7 @@ async def create_order(user_id):
                 "JOIN products p ON p.id = ci.product_id "
                 "WHERE ci.user_id = $1 AND p.is_active = TRUE "
                 "HAVING COUNT(*) > 0 "
-                "RETURNING id, total",
+                "RETURNING id, total ",
                 user_id,
             )
             if order is None:
@@ -92,7 +92,7 @@ async def create_order(user_id):
                 "SELECT $1, p.id, p.name, p.price, ci.qty "
                 "FROM cart_items ci "
                 "JOIN products p ON p.id = ci.product_id "
-                "WHERE ci.user_id = $2 AND p.is_active = TRUE",
+                "WHERE ci.user_id = $2 AND p.is_active = TRUE ",
                 order["id"], user_id,
             )
             await conn.execute(
@@ -100,3 +100,21 @@ async def create_order(user_id):
                 user_id,
             )
     return dict(order)
+
+async def get_all_products():
+    async with db.pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT id, name, price, is_active "
+            "FROM products ORDER BY id "
+            )
+        return [dict(r) for r in rows]
+
+async def toggle_product(product_id):
+    async with db.pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "UPDATE products SET is_active = NOT is_active "
+            "WHERE id = $1 "
+            "RETURNING id, name, is_active ",
+            product_id,
+        )
+    return dict(row) if row else None

@@ -6,7 +6,7 @@ from core import db
 from core.config import BOT_TOKEN
 from tg_bot.handlers import start, show_products, back_to_categories, show_product_card, add_to_cart_button, show_cart, clear_cart_button, checkout_button
 from core.config import BOT_TOKEN, ADMIN_IDS
-from tg_bot.admin import admin_panel
+from tg_bot.admin import admin_panel, admin_panel_button, admin_products, admin_toggle
 
 logging.basicConfig(level=logging.INFO)
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -46,4 +46,7 @@ def run_bot():
     application.add_error_handler(on_error)
     if ADMIN_IDS:
         application.add_handler(CommandHandler("admin", admin_panel))
+        application.add_handler(CallbackQueryHandler(admin_panel_button, pattern="^admin:panel$"))
+        application.add_handler(CallbackQueryHandler(admin_products, pattern="^admin:products$"))
+        application.add_handler(CallbackQueryHandler(admin_toggle, pattern="^admin:toggle:"))
     application.run_polling()

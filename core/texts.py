@@ -35,3 +35,13 @@ CART_CLEARED = "Корзина очищена"
 OWNER_NEW_ORDER = "Новый заказ №{order_id}\nПокупатель: {name}\nСумма: {total}"
 
 ADMIN_PANEL = "Панель администратора"
+
+BUT_ADMIN_PRODUCTS = "Товары"
+
+BUT_ADMIN_BACK = "В панель"
+
+ADMIN_PRODUCTS_TITLE = "Товары. Нажмите на товар, чтобы скрыть или вернуть его на витрину:"
+
+PRODUCT_HIDDEN = "Товар скрыт"
+
+PRODUCT_SHOWN = "Товар на витрине"

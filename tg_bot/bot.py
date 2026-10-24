@@ -3,7 +3,6 @@ import logging
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler
 
 from core import db
-from core.config import BOT_TOKEN
 from tg_bot.handlers import start, show_products, back_to_categories, show_product_card, add_to_cart_button, show_cart, clear_cart_button, checkout_button
 from core.config import BOT_TOKEN, ADMIN_IDS
 from tg_bot.admin import (

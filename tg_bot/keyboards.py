@@ -37,13 +37,6 @@ def product_card_keyboard(product_id, category_id):
 def cart_keyboard(has_items):
     rows = []
     if has_items:
-        rows.append([InlineKeyboardButton(BUT_CLEAR_CART, callback_data="cart:clear")])
-    rows.append([InlineKeyboardButton(BUT_TO_CATALOG, callback_data="back:cats")])
-    return InlineKeyboardMarkup(rows)
-
-def cart_keyboard(has_items):
-    rows = []
-    if has_items:
         rows.append([InlineKeyboardButton(BUT_CHECKOUT, callback_data="order:create")])
         rows.append([InlineKeyboardButton(BUT_CLEAR_CART, callback_data="cart:clear")])
     rows.append([InlineKeyboardButton(BUT_TO_CATALOG, callback_data="back:cats")])

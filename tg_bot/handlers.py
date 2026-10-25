@@ -5,7 +5,7 @@ from telegram.ext import ContextTypes
 
 from core import repository
 from core.config import OWNER_ID
-from core.texts import WELCOME, CHOOSE_CATEGORY, CHOOSE_PRODUCT, PRODUCT_NOT_FOUND, ADDED_TO_CART, CART_EMPTY, CART_CLEARED, ORDER_CREATED, OWNER_NEW_ORDER, MAIN_MENU, HELP_TEXT
+from core.texts import WELCOME, CHOOSE_CATEGORY, CHOOSE_PRODUCT, PRODUCT_NOT_FOUND, ADDED_TO_CART, CART_EMPTY, CART_CLEARED, ORDER_CREATED, OWNER_NEW_ORDER, MAIN_MENU, HELP_TEXT, CATEGORY_EMPTY
 from core.formatting import format_products_list, format_product_card, format_cart, format_price
 from tg_bot.keyboards import categories_keyboard, products_keyboard, product_card_keyboard, cart_keyboard, main_menu_keyboard, back_to_menu_keyboard
 
@@ -37,6 +37,9 @@ async def show_products(update, context):
 
     category_id = int(query.data.split(":")[1])
     products = await repository.get_products(category_id)
+    if not products:
+        await query.edit_message_text(CATEGORY_EMPTY, reply_markup=products_keyboard(products))
+        return
 
     text = CHOOSE_PRODUCT + "\n\n" + format_products_list(products)
     keyboard = products_keyboard(products)

@@ -5,17 +5,31 @@ from telegram.ext import ContextTypes
 
 from core import repository
 from core.config import OWNER_ID
-from core.texts import WELCOME, CHOOSE_CATEGORY, CHOOSE_PRODUCT, PRODUCT_NOT_FOUND, ADDED_TO_CART, CART_EMPTY, CART_CLEARED, ORDER_CREATED, OWNER_NEW_ORDER
+from core.texts import WELCOME, CHOOSE_CATEGORY, CHOOSE_PRODUCT, PRODUCT_NOT_FOUND, ADDED_TO_CART, CART_EMPTY, CART_CLEARED, ORDER_CREATED, OWNER_NEW_ORDER, MAIN_MENU, HELP_TEXT
 from core.formatting import format_products_list, format_product_card, format_cart, format_price
-from tg_bot.keyboards import categories_keyboard, products_keyboard, product_card_keyboard, cart_keyboard
+from tg_bot.keyboards import categories_keyboard, products_keyboard, product_card_keyboard, cart_keyboard, main_menu_keyboard, back_to_menu_keyboard
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-	categories = await repository.get_categories()
-	keyboard = categories_keyboard(categories)
-	await update.message.reply_text(
-		WELCOME + "\n\n" + CHOOSE_CATEGORY,
-		reply_markup=keyboard,
-		)
+    await update.message.reply_text(
+        WELCOME + "\n\n" + MAIN_MENU,
+        reply_markup=main_menu_keyboard(),
+    )
+
+
+async def help_command(update, context):
+    await update.message.reply_text(HELP_TEXT, reply_markup=back_to_menu_keyboard())
+
+
+async def help_button(update, context):
+    query = update.callback_query
+    await query.answer()
+    await query.edit_message_text(HELP_TEXT, reply_markup=back_to_menu_keyboard())
+
+
+async def main_menu_button(update, context):
+    query = update.callback_query
+    await query.answer()
+    await query.edit_message_text(MAIN_MENU, reply_markup=main_menu_keyboard())
 
 async def show_products(update, context):
     query = update.callback_query

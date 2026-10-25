@@ -3,7 +3,7 @@ import logging
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler
 
 from core import db
-from tg_bot.handlers import start, show_products, back_to_categories, show_product_card, add_to_cart_button, show_cart, clear_cart_button, checkout_button
+from tg_bot.handlers import start, show_products, back_to_categories, show_product_card, add_to_cart_button, show_cart, clear_cart_button, checkout_button, help_command, help_button, main_menu_button
 from core.config import BOT_TOKEN, ADMIN_IDS
 from tg_bot.admin import (
     admin_panel,
@@ -61,4 +61,7 @@ def run_bot():
         application.add_handler(CallbackQueryHandler(admin_orders, pattern="^admin:orders$"))
         application.add_handler(CallbackQueryHandler(admin_order, pattern="^admin:order:"))
         application.add_handler(CallbackQueryHandler(admin_status, pattern="^admin:status:"))
+        application.add_handler(CommandHandler("help", help_command))
+    application.add_handler(CallbackQueryHandler(help_button, pattern="^menu:help$"))
+    application.add_handler(CallbackQueryHandler(main_menu_button, pattern="^menu:main$"))
     application.run_polling()

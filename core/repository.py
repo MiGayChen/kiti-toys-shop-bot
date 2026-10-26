@@ -174,3 +174,14 @@ async def set_order_status(order_id, status):
             order_id, status,
         )
     return dict(row) if row else None
+
+async def add_category(name):
+    async with db.pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "INSERT INTO categories (name) "
+            "VALUES ($1) "
+            "ON CONFLICT (name) DO NOTHING "
+            "RETURNING id, name",
+            name,
+        )
+    return dict(row) if row else None

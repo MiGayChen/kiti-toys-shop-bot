@@ -113,3 +113,10 @@ SELECT o.id, o.status, o.total, o.created_at, u.name
 FROM orders o
 JOIN users u ON u.id = o.user_id
 WHERE o.id = 3;
+
+-- add_category(name): добавить категорию, вернуть её id и название
+-- ON CONFLICT DO NOTHING: название уникально, при повторе вернётся 0 строк (в Python это None, то есть «уже есть»)
+INSERT INTO categories (name)
+VALUES ('Тест')
+ON CONFLICT (name) DO NOTHING
+RETURNING id, name;

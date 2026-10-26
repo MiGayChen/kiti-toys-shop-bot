@@ -45,6 +45,11 @@ from core.texts import (
     CAT_EXISTS, 
     CAT_DONE, 
     CAT_CANCELLED,
+    BUT_ADMIN_RENAME_CATEGORY,
+    CAT_RENAME_PICK,
+    CAT_RENAME_ASK,
+    CAT_RENAME_DONE,
+    CAT_NOT_FOUND,
 )
 
 NAME, DESCRIPTION, PRICE, CATEGORY, CONFIRM = range(5)
@@ -60,6 +65,7 @@ def panel_keyboard():
         [InlineKeyboardButton(BUT_ADMIN_ADD, callback_data="admin:add")],
         [InlineKeyboardButton(BUT_ADMIN_ORDERS, callback_data="admin:orders")],
         [InlineKeyboardButton(BUT_ADMIN_ADD_CATEGORY, callback_data="admin:addcat")],
+        [InlineKeyboardButton(BUT_ADMIN_RENAME_CATEGORY, callback_data="admin:rencat")],
     ]
     return InlineKeyboardMarkup(rows)
 
@@ -403,5 +409,109 @@ def add_category_conversation():
         fallbacks=[
             CommandHandler("cancel", addcat_cancel),
             CallbackQueryHandler(addcat_cancel, pattern="^admin:cancel$"),
+        ],
+    )
+
+REN_PICK, REN_NAME = range(2)
+
+
+def rename_pick_keyboard(categories):
+    rows = []
+    for category in categories:
+        rows.append([InlineKeyboardButton(
+            category["name"],
+            callback_data=f"admin:rencat:{category['id']}",
+        )])
+    rows.append([InlineKeyboardButton(BUT_CANCEL, callback_data="admin:cancel")])
+    return InlineKeyboardMarkup(rows)
+
+
+async def rename_start(update, context):
+    query = update.callback_query
+    await query.answer()
+    if not is_admin(update):
+        return ConversationHandler.END
+
+    categories = await repository.get_categories()
+    await query.edit_message_text(CAT_RENAME_PICK, reply_markup=rename_pick_keyboard(categories))
+    return REN_PICK
+
+
+async def rename_pick(update, context):
+    query = update.callback_query
+    if not is_admin(update):
+        await query.answer()
+        return ConversationHandler.END
+
+    category_id = int(query.data.split(":")[2])
+    categories = await repository.get_categories()
+    category = next((c for c in categories if c["id"] == category_id), None)
+    if category is None:
+        await query.answer(CAT_NOT_FOUND, show_alert=True)
+        return REN_PICK
+
+    await query.answer()
+    context.user_data["rename_category_id"] = category["id"]
+    await query.edit_message_text(
+        CAT_RENAME_ASK.format(name=category["name"]),
+        reply_markup=cancel_keyboard(),
+    )
+    return REN_NAME
+
+
+async def rename_name(update, context):
+    if not is_admin(update):
+        return ConversationHandler.END
+
+    name = update.message.text.strip()
+    if not name or len(name) > 50:
+        await update.message.reply_text(CAT_BAD_NAME, reply_markup=cancel_keyboard())
+        return REN_NAME
+
+    category_id = context.user_data.get("rename_category_id")
+    if category_id is None:
+        await update.message.reply_text(CAT_CANCELLED, reply_markup=panel_keyboard())
+        return ConversationHandler.END
+
+    try:
+        category = await repository.rename_category(category_id, name)
+    except repository.CategoryExists:
+        await update.message.reply_text(CAT_EXISTS, reply_markup=cancel_keyboard())
+        return REN_NAME
+
+    context.user_data.pop("rename_category_id", None)
+    if category is None:
+        await update.message.reply_text(CAT_NOT_FOUND, reply_markup=panel_keyboard())
+        return ConversationHandler.END
+
+    await update.message.reply_text(
+        CAT_RENAME_DONE.format(name=category["name"]),
+        reply_markup=panel_keyboard(),
+    )
+    return ConversationHandler.END
+
+
+async def rename_cancel(update, context):
+    if not is_admin(update):
+        return ConversationHandler.END
+
+    context.user_data.pop("rename_category_id", None)
+    if update.callback_query:
+        await update.callback_query.answer()
+    await update.effective_message.reply_text(CAT_CANCELLED, reply_markup=panel_keyboard())
+    return ConversationHandler.END
+
+
+def rename_category_conversation():
+    text_filter = filters.TEXT & ~filters.COMMAND
+    return ConversationHandler(
+        entry_points=[CallbackQueryHandler(rename_start, pattern="^admin:rencat$")],
+        states={
+            REN_PICK: [CallbackQueryHandler(rename_pick, pattern="^admin:rencat:")],
+            REN_NAME: [MessageHandler(text_filter, rename_name)],
+        },
+        fallbacks=[
+            CommandHandler("cancel", rename_cancel),
+            CallbackQueryHandler(rename_cancel, pattern="^admin:cancel$"),
         ],
     )

@@ -15,6 +15,7 @@ from tg_bot.admin import (
     admin_status,
     add_product_conversation,
     add_category_conversation,
+    rename_category_conversation,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -64,6 +65,7 @@ def run_bot():
         application.add_handler(CallbackQueryHandler(admin_status, pattern="^admin:status:"))
         application.add_handler(CommandHandler("help", help_command))
         application.add_handler(add_category_conversation())
+        application.add_handler(rename_category_conversation())
     application.add_handler(CallbackQueryHandler(help_button, pattern="^menu:help$"))
     application.add_handler(CallbackQueryHandler(main_menu_button, pattern="^menu:main$"))
     application.run_polling()

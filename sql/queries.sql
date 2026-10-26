@@ -129,3 +129,11 @@ UPDATE categories
 SET name = 'Тест3'
 WHERE id = 1
 RETURNING id, name;
+
+
+-- delete_category(category_id): удалить категорию
+-- Если категории нет, вернётся 0 строк (в Python это None)
+-- Если в ней есть товары (даже скрытые), база вернёт ошибку внешнего ключа (в Python это ForeignKeyViolationError)
+DELETE FROM categories
+WHERE id = 1
+RETURNING id, name;

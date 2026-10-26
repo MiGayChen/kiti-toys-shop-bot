@@ -203,3 +203,21 @@ async def rename_category(category_id, name):
         except asyncpg.UniqueViolationError:
             raise CategoryExists
     return dict(row) if row else None
+
+
+class CategoryNotEmpty(Exception):
+    pass
+
+
+async def delete_category(category_id):
+    async with db.pool.acquire() as conn:
+        try:
+            row = await conn.fetchrow(
+                "DELETE FROM categories "
+                "WHERE id = $1 "
+                "RETURNING id, name",
+                category_id,
+            )
+        except asyncpg.ForeignKeyViolationError:
+            raise CategoryNotEmpty
+    return dict(row) if row else None

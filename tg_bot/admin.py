@@ -50,6 +50,13 @@ from core.texts import (
     CAT_RENAME_ASK,
     CAT_RENAME_DONE,
     CAT_NOT_FOUND,
+    BUT_ADMIN_DELETE_CATEGORY,
+    CAT_DELETE_PICK,
+    CAT_DELETE_CONFIRM,
+    BUT_CONFIRM_DELETE,
+    CAT_DELETE_DONE,
+    CAT_NOT_EMPTY,
+    CAT_DELETE_CANCELLED,
 )
 
 NAME, DESCRIPTION, PRICE, CATEGORY, CONFIRM = range(5)
@@ -66,6 +73,7 @@ def panel_keyboard():
         [InlineKeyboardButton(BUT_ADMIN_ORDERS, callback_data="admin:orders")],
         [InlineKeyboardButton(BUT_ADMIN_ADD_CATEGORY, callback_data="admin:addcat")],
         [InlineKeyboardButton(BUT_ADMIN_RENAME_CATEGORY, callback_data="admin:rencat")],
+        [InlineKeyboardButton(BUT_ADMIN_DELETE_CATEGORY, callback_data="admin:delcat")],
     ]
     return InlineKeyboardMarkup(rows)
 
@@ -514,4 +522,79 @@ def rename_category_conversation():
             CommandHandler("cancel", rename_cancel),
             CallbackQueryHandler(rename_cancel, pattern="^admin:cancel$"),
         ],
+    )
+
+def delete_pick_keyboard(categories):
+    rows = []
+    for category in categories:
+        rows.append([InlineKeyboardButton(
+            category["name"],
+            callback_data=f"admin:delcat:{category['id']}",
+        )])
+    rows.append([InlineKeyboardButton(BUT_ADMIN_BACK, callback_data="admin:panel")])
+    return InlineKeyboardMarkup(rows)
+
+
+def delete_confirm_keyboard(category_id):
+    rows = [
+        [InlineKeyboardButton(BUT_CONFIRM_DELETE, callback_data=f"admin:delcat_yes:{category_id}")],
+        [InlineKeyboardButton(BUT_CANCEL, callback_data="admin:delcat")],
+    ]
+    return InlineKeyboardMarkup(rows)
+
+
+async def delete_category_list(update, context):
+    query = update.callback_query
+    await query.answer()
+    if not is_admin(update):
+        return
+
+    categories = await repository.get_categories()
+    await query.edit_message_text(
+        CAT_DELETE_PICK,
+        reply_markup=delete_pick_keyboard(categories),
+    )
+
+
+async def delete_category_ask(update, context):
+    query = update.callback_query
+    if not is_admin(update):
+        await query.answer()
+        return
+
+    category_id = int(query.data.split(":")[2])
+    categories = await repository.get_categories()
+    category = next((c for c in categories if c["id"] == category_id), None)
+    if category is None:
+        await query.answer(CAT_NOT_FOUND, show_alert=True)
+        return
+
+    await query.answer()
+    await query.edit_message_text(
+        CAT_DELETE_CONFIRM.format(name=category["name"]),
+        reply_markup=delete_confirm_keyboard(category["id"]),
+    )
+
+
+async def delete_category_yes(update, context):
+    query = update.callback_query
+    if not is_admin(update):
+        await query.answer()
+        return
+
+    category_id = int(query.data.split(":")[2])
+    try:
+        category = await repository.delete_category(category_id)
+    except repository.CategoryNotEmpty:
+        await query.answer(CAT_NOT_EMPTY, show_alert=True)
+        return
+
+    if category is None:
+        await query.answer(CAT_NOT_FOUND, show_alert=True)
+        return
+
+    await query.answer()
+    await query.edit_message_text(
+        CAT_DELETE_DONE.format(name=category["name"]),
+        reply_markup=panel_keyboard(),
     )

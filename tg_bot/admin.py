@@ -38,7 +38,13 @@ from core.texts import (
     ADMIN_ORDERS_TITLE,
     ADMIN_NO_ORDERS,
     ORDER_NOT_FOUND,
-    ORDER_STATUS_CHANGED,
+    ORDER_STATUS_CHANGED, 
+    BUT_ADMIN_ADD_CATEGORY, 
+    CAT_ASK_NAME, 
+    CAT_BAD_NAME, 
+    CAT_EXISTS, 
+    CAT_DONE, 
+    CAT_CANCELLED,
 )
 
 NAME, DESCRIPTION, PRICE, CATEGORY, CONFIRM = range(5)
@@ -53,6 +59,7 @@ def panel_keyboard():
         [InlineKeyboardButton(BUT_ADMIN_PRODUCTS, callback_data="admin:products")],
         [InlineKeyboardButton(BUT_ADMIN_ADD, callback_data="admin:add")],
         [InlineKeyboardButton(BUT_ADMIN_ORDERS, callback_data="admin:orders")],
+        [InlineKeyboardButton(BUT_ADMIN_ADD_CATEGORY, callback_data="admin:addcat")],
     ]
     return InlineKeyboardMarkup(rows)
 
@@ -341,3 +348,60 @@ async def admin_status(update, context):
 
     await query.answer(ORDER_STATUS_CHANGED)
     await render_order(query, order_id)
+
+CAT_NAME = 0
+
+
+async def addcat_start(update, context):
+    query = update.callback_query
+    await query.answer()
+    if not is_admin(update):
+        return ConversationHandler.END
+
+    await query.edit_message_text(CAT_ASK_NAME, reply_markup=cancel_keyboard())
+    return CAT_NAME
+
+
+async def addcat_name(update, context):
+    if not is_admin(update):
+        return ConversationHandler.END
+
+    name = update.message.text.strip()
+    if not name or len(name) > 50:
+        await update.message.reply_text(CAT_BAD_NAME, reply_markup=cancel_keyboard())
+        return CAT_NAME
+
+    category = await repository.add_category(name)
+    if category is None:
+        await update.message.reply_text(CAT_EXISTS, reply_markup=cancel_keyboard())
+        return CAT_NAME
+
+    await update.message.reply_text(
+        CAT_DONE.format(name=category["name"], category_id=category["id"]),
+        reply_markup=panel_keyboard(),
+    )
+    return ConversationHandler.END
+
+
+async def addcat_cancel(update, context):
+    if not is_admin(update):
+        return ConversationHandler.END
+
+    if update.callback_query:
+        await update.callback_query.answer()
+    await update.effective_message.reply_text(CAT_CANCELLED, reply_markup=panel_keyboard())
+    return ConversationHandler.END
+
+
+def add_category_conversation():
+    text_filter = filters.TEXT & ~filters.COMMAND
+    return ConversationHandler(
+        entry_points=[CallbackQueryHandler(addcat_start, pattern="^admin:addcat$")],
+        states={
+            CAT_NAME: [MessageHandler(text_filter, addcat_name)],
+        },
+        fallbacks=[
+            CommandHandler("cancel", addcat_cancel),
+            CallbackQueryHandler(addcat_cancel, pattern="^admin:cancel$"),
+        ],
+    )

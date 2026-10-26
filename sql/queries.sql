@@ -120,3 +120,12 @@ INSERT INTO categories (name)
 VALUES ('Тест')
 ON CONFLICT (name) DO NOTHING
 RETURNING id, name;
+
+
+-- rename_category(category_id, name): переименовать категорию
+-- Если категории нет, вернётся 0 строк (в Python это None)
+-- Если название занято, база вернёт ошибку UNIQUE (в Python это UniqueViolationError)
+UPDATE categories
+SET name = 'Тест3'
+WHERE id = 1
+RETURNING id, name;

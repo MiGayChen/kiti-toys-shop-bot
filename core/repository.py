@@ -1,5 +1,5 @@
 from core import db
-
+import asyncpg
 
 async def get_categories():
     async with db.pool.acquire() as conn:
@@ -184,4 +184,22 @@ async def add_category(name):
             "RETURNING id, name",
             name,
         )
+    return dict(row) if row else None
+
+
+class CategoryExists(Exception):
+    pass
+
+
+async def rename_category(category_id, name):
+    async with db.pool.acquire() as conn:
+        try:
+            row = await conn.fetchrow(
+                "UPDATE categories SET name = $2 "
+                "WHERE id = $1 "
+                "RETURNING id, name",
+                category_id, name,
+            )
+        except asyncpg.UniqueViolationError:
+            raise CategoryExists
     return dict(row) if row else None

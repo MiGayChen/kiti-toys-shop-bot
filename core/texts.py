@@ -151,3 +151,25 @@ CAT_DELETE_DONE = "Категория «{name}» удалена."
 CAT_NOT_EMPTY = "В категории есть товары. Сначала перенесите или удалите их."
 
 CAT_DELETE_CANCELLED = "Удаление отменено"
+
+BUT_ADMIN_EDIT_PRODUCT = "Изменить товар"
+
+PROD_EDIT_PICK = "Какой товар изменить?"
+
+PROD_EDIT_CARD = "{card}\n\nЧто изменить?"
+
+BUT_EDIT_NAME = "Название"
+
+BUT_EDIT_DESC = "Описание"
+
+BUT_EDIT_PRICE = "Цена"
+
+PROD_EDIT_ASK_NAME = "Введите новое название (до 100 символов) или нажмите «Отмена»:"
+
+PROD_EDIT_ASK_DESC = "Введите новое описание (до 500 символов) или нажмите «Отмена»:"
+
+PROD_EDIT_ASK_PRICE = "Введите новую цену в рублях, например 499 или 499.50, или нажмите «Отмена»:"
+
+PROD_EDIT_DONE = "Товар изменён:\n\n{card}"
+
+PROD_EDIT_CANCELLED = "Изменение товара отменено"

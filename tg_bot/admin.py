@@ -57,6 +57,17 @@ from core.texts import (
     CAT_DELETE_DONE,
     CAT_NOT_EMPTY,
     CAT_DELETE_CANCELLED,
+    BUT_ADMIN_EDIT_PRODUCT, 
+    PROD_EDIT_PICK, 
+    PROD_EDIT_CARD, 
+    BUT_EDIT_NAME, 
+    BUT_EDIT_DESC, 
+    BUT_EDIT_PRICE, 
+    PROD_EDIT_ASK_NAME, 
+    PROD_EDIT_ASK_DESC, 
+    PROD_EDIT_ASK_PRICE, 
+    PROD_EDIT_DONE, 
+    PROD_EDIT_CANCELLED,
 )
 
 NAME, DESCRIPTION, PRICE, CATEGORY, CONFIRM = range(5)
@@ -70,6 +81,7 @@ def panel_keyboard():
     rows = [
         [InlineKeyboardButton(BUT_ADMIN_PRODUCTS, callback_data="admin:products")],
         [InlineKeyboardButton(BUT_ADMIN_ADD, callback_data="admin:add")],
+        [InlineKeyboardButton(BUT_ADMIN_EDIT_PRODUCT, callback_data="admin:editprod")],
         [InlineKeyboardButton(BUT_ADMIN_ORDERS, callback_data="admin:orders")],
         [InlineKeyboardButton(BUT_ADMIN_ADD_CATEGORY, callback_data="admin:addcat")],
         [InlineKeyboardButton(BUT_ADMIN_RENAME_CATEGORY, callback_data="admin:rencat")],
@@ -597,4 +609,150 @@ async def delete_category_yes(update, context):
     await query.edit_message_text(
         CAT_DELETE_DONE.format(name=category["name"]),
         reply_markup=panel_keyboard(),
+    )
+
+EDIT_PICK, EDIT_FIELD, EDIT_VALUE = range(3)
+
+EDIT_ASK = {
+    "name": PROD_EDIT_ASK_NAME,
+    "description": PROD_EDIT_ASK_DESC,
+    "price": PROD_EDIT_ASK_PRICE,
+}
+
+
+def edit_pick_keyboard(products):
+    rows = []
+    for product in products:
+        mark = "✅" if product["is_active"] else "🚫"
+        text = f"{mark} {product['name']} — {format_price(product['price'])}"
+        rows.append([InlineKeyboardButton(text, callback_data=f"admin:editprod:{product['id']}")])
+    rows.append([InlineKeyboardButton(BUT_CANCEL, callback_data="admin:cancel")])
+    return InlineKeyboardMarkup(rows)
+
+
+def edit_field_keyboard():
+    rows = [
+        [InlineKeyboardButton(BUT_EDIT_NAME, callback_data="admin:editfield:name")],
+        [InlineKeyboardButton(BUT_EDIT_DESC, callback_data="admin:editfield:description")],
+        [InlineKeyboardButton(BUT_EDIT_PRICE, callback_data="admin:editfield:price")],
+        [InlineKeyboardButton(BUT_CANCEL, callback_data="admin:cancel")],
+    ]
+    return InlineKeyboardMarkup(rows)
+
+
+async def edit_start(update, context):
+    query = update.callback_query
+    await query.answer()
+    if not is_admin(update):
+        return ConversationHandler.END
+
+    products = await repository.get_all_products()
+    await query.edit_message_text(PROD_EDIT_PICK, reply_markup=edit_pick_keyboard(products))
+    return EDIT_PICK
+
+
+async def edit_pick(update, context):
+    query = update.callback_query
+    if not is_admin(update):
+        await query.answer()
+        return ConversationHandler.END
+
+    product_id = int(query.data.split(":")[2])
+    product = await repository.get_product_admin(product_id)
+    if product is None:
+        await query.answer(PRODUCT_NOT_FOUND, show_alert=True)
+        return EDIT_PICK
+
+    await query.answer()
+    context.user_data["edit_product_id"] = product["id"]
+    await query.edit_message_text(
+        PROD_EDIT_CARD.format(card=format_product_card(product)),
+        reply_markup=edit_field_keyboard(),
+    )
+    return EDIT_FIELD
+
+
+async def edit_field(update, context):
+    query = update.callback_query
+    if not is_admin(update):
+        await query.answer()
+        return ConversationHandler.END
+
+    field = query.data.split(":")[2]
+    if field not in EDIT_ASK:
+        await query.answer()
+        return EDIT_FIELD
+
+    await query.answer()
+    context.user_data["edit_field"] = field
+    await query.edit_message_text(EDIT_ASK[field], reply_markup=cancel_keyboard())
+    return EDIT_VALUE
+
+
+async def edit_value(update, context):
+    if not is_admin(update):
+        return ConversationHandler.END
+
+    product_id = context.user_data.get("edit_product_id")
+    field = context.user_data.get("edit_field")
+    if product_id is None or field not in EDIT_ASK:
+        await update.message.reply_text(PROD_EDIT_CANCELLED, reply_markup=panel_keyboard())
+        return ConversationHandler.END
+
+    text = update.message.text.strip()
+    if field == "name":
+        if not text or len(text) > 100:
+            await update.message.reply_text(ADD_BAD_NAME, reply_markup=cancel_keyboard())
+            return EDIT_VALUE
+        value = text
+    elif field == "description":
+        if not text or len(text) > 500:
+            await update.message.reply_text(ADD_BAD_DESC, reply_markup=cancel_keyboard())
+            return EDIT_VALUE
+        value = text
+    else:
+        value = parse_price(text)
+        if value is None:
+            await update.message.reply_text(ADD_BAD_PRICE, reply_markup=cancel_keyboard())
+            return EDIT_VALUE
+
+    product = await repository.update_product(product_id, **{field: value})
+    context.user_data.pop("edit_product_id", None)
+    context.user_data.pop("edit_field", None)
+    if product is None:
+        await update.message.reply_text(PRODUCT_NOT_FOUND, reply_markup=panel_keyboard())
+        return ConversationHandler.END
+
+    await update.message.reply_text(
+        PROD_EDIT_DONE.format(card=format_product_card(product)),
+        reply_markup=panel_keyboard(),
+    )
+    return ConversationHandler.END
+
+
+async def edit_cancel(update, context):
+    if not is_admin(update):
+        return ConversationHandler.END
+
+    context.user_data.pop("edit_product_id", None)
+    context.user_data.pop("edit_field", None)
+    if update.callback_query:
+        await update.callback_query.answer()
+    await update.effective_message.reply_text(PROD_EDIT_CANCELLED, reply_markup=panel_keyboard())
+    return ConversationHandler.END
+
+
+def edit_product_conversation():
+    text_filter = filters.TEXT & ~filters.COMMAND
+    return ConversationHandler(
+        entry_points=[CallbackQueryHandler(edit_start, pattern="^admin:editprod$")],
+        states={
+            EDIT_PICK: [CallbackQueryHandler(edit_pick, pattern="^admin:editprod:")],
+            EDIT_FIELD: [CallbackQueryHandler(edit_field, pattern="^admin:editfield:")],
+            EDIT_VALUE: [MessageHandler(text_filter, edit_value)],
+        },
+        fallbacks=[
+            CommandHandler("cancel", edit_cancel),
+            CallbackQueryHandler(edit_cancel, pattern="^admin:cancel$"),
+        ],
     )

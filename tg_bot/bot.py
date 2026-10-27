@@ -19,6 +19,9 @@ from tg_bot.admin import (
     delete_category_list, 
     delete_category_ask, 
     delete_category_yes,
+    add_category_conversation,
+    rename_category_conversation,
+    edit_product_conversation,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -72,6 +75,7 @@ def run_bot():
         application.add_handler(CallbackQueryHandler(delete_category_list, pattern="^admin:delcat$"))
         application.add_handler(CallbackQueryHandler(delete_category_ask, pattern="^admin:delcat:"))
         application.add_handler(CallbackQueryHandler(delete_category_yes, pattern="^admin:delcat_yes:"))
+        application.add_handler(edit_product_conversation())
     application.add_handler(CallbackQueryHandler(help_button, pattern="^menu:help$"))
     application.add_handler(CallbackQueryHandler(main_menu_button, pattern="^menu:main$"))
     application.run_polling()

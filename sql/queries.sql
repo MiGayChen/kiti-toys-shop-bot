@@ -154,3 +154,11 @@ SET name = COALESCE('Новое имя', name),
     price = COALESCE(NULL, price)
 WHERE id = 1
 RETURNING id, name, description, price;
+
+
+-- delete_product(product_id): удалить товар совсем
+-- Из корзин он исчезает сам (ON DELETE CASCADE), в старых заказах product_id становится NULL, а name и price остаются
+-- Если товара нет, вернётся 0 строк (в Python это None)
+DELETE FROM products
+WHERE id = 1
+RETURNING id, name;

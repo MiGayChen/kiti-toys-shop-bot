@@ -56,7 +56,6 @@ from core.texts import (
     BUT_CONFIRM_DELETE,
     CAT_DELETE_DONE,
     CAT_NOT_EMPTY,
-    CAT_DELETE_CANCELLED,
     BUT_ADMIN_EDIT_PRODUCT, 
     PROD_EDIT_PICK, 
     PROD_EDIT_CARD, 
@@ -68,6 +67,10 @@ from core.texts import (
     PROD_EDIT_ASK_PRICE, 
     PROD_EDIT_DONE, 
     PROD_EDIT_CANCELLED,
+    BUT_ADMIN_DELETE_PRODUCT,
+    PROD_DELETE_PICK,
+    PROD_DELETE_CONFIRM,
+    PROD_DELETE_DONE,
 )
 
 NAME, DESCRIPTION, PRICE, CATEGORY, CONFIRM = range(5)
@@ -86,6 +89,7 @@ def panel_keyboard():
         [InlineKeyboardButton(BUT_ADMIN_ADD_CATEGORY, callback_data="admin:addcat")],
         [InlineKeyboardButton(BUT_ADMIN_RENAME_CATEGORY, callback_data="admin:rencat")],
         [InlineKeyboardButton(BUT_ADMIN_DELETE_CATEGORY, callback_data="admin:delcat")],
+        [InlineKeyboardButton(BUT_ADMIN_DELETE_PRODUCT, callback_data="admin:delprod")],
     ]
     return InlineKeyboardMarkup(rows)
 
@@ -755,4 +759,72 @@ def edit_product_conversation():
             CommandHandler("cancel", edit_cancel),
             CallbackQueryHandler(edit_cancel, pattern="^admin:cancel$"),
         ],
+    )
+
+def delete_product_pick_keyboard(products):
+    rows = []
+    for product in products:
+        mark = "✅" if product["is_active"] else "🚫"
+        text = f"{mark} {product['name']} — {format_price(product['price'])}"
+        rows.append([InlineKeyboardButton(text, callback_data=f"admin:delprod:{product['id']}")])
+    rows.append([InlineKeyboardButton(BUT_ADMIN_BACK, callback_data="admin:panel")])
+    return InlineKeyboardMarkup(rows)
+
+
+def delete_product_confirm_keyboard(product_id):
+    rows = [
+        [InlineKeyboardButton(BUT_CONFIRM_DELETE, callback_data=f"admin:delprod_yes:{product_id}")],
+        [InlineKeyboardButton(BUT_CANCEL, callback_data="admin:delprod")],
+    ]
+    return InlineKeyboardMarkup(rows)
+
+
+async def delete_product_list(update, context):
+    query = update.callback_query
+    await query.answer()
+    if not is_admin(update):
+        return
+
+    products = await repository.get_all_products()
+    await query.edit_message_text(
+        PROD_DELETE_PICK,
+        reply_markup=delete_product_pick_keyboard(products),
+    )
+
+
+async def delete_product_ask(update, context):
+    query = update.callback_query
+    if not is_admin(update):
+        await query.answer()
+        return
+
+    product_id = int(query.data.split(":")[2])
+    product = await repository.get_product_admin(product_id)
+    if product is None:
+        await query.answer(PRODUCT_NOT_FOUND, show_alert=True)
+        return
+
+    await query.answer()
+    await query.edit_message_text(
+        PROD_DELETE_CONFIRM.format(name=product["name"]),
+        reply_markup=delete_product_confirm_keyboard(product["id"]),
+    )
+
+
+async def delete_product_yes(update, context):
+    query = update.callback_query
+    if not is_admin(update):
+        await query.answer()
+        return
+
+    product_id = int(query.data.split(":")[2])
+    product = await repository.delete_product(product_id)
+    if product is None:
+        await query.answer(PRODUCT_NOT_FOUND, show_alert=True)
+        return
+
+    await query.answer()
+    await query.edit_message_text(
+        PROD_DELETE_DONE.format(name=product["name"]),
+        reply_markup=panel_keyboard(),
     )

@@ -245,3 +245,14 @@ async def update_product(product_id, name=None, description=None, price=None):
             product_id, name, description, price,
         )
     return dict(row) if row else None
+
+
+async def delete_product(product_id):
+    async with db.pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "DELETE FROM products "
+            "WHERE id = $1 "
+            "RETURNING id, name",
+            product_id,
+        )
+    return dict(row) if row else None

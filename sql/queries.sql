@@ -137,3 +137,20 @@ RETURNING id, name;
 DELETE FROM categories
 WHERE id = 1
 RETURNING id, name;
+
+
+-- get_product_admin(product_id): один товар для админки, включая скрытый
+-- Без фильтра is_active: админ должен открыть и выключенный товар
+SELECT id, category_id, name, description, price, is_active
+FROM products
+WHERE id = 1;
+
+-- update_product(product_id, name, description, price): изменить поля товара
+-- COALESCE(новое, старое): если передан NULL, поле остаётся прежним
+-- Если товара нет, вернётся 0 строк (в Python это None)
+UPDATE products
+SET name = COALESCE('Новое имя', name),
+    description = COALESCE(NULL, description),
+    price = COALESCE(NULL, price)
+WHERE id = 1
+RETURNING id, name, description, price;

@@ -221,3 +221,27 @@ async def delete_category(category_id):
         except asyncpg.ForeignKeyViolationError:
             raise CategoryNotEmpty
     return dict(row) if row else None
+
+
+async def get_product_admin(product_id):
+    async with db.pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT id, category_id, name, description, price, is_active "
+            "FROM products WHERE id = $1",
+            product_id,
+        )
+    return dict(row) if row else None
+
+
+async def update_product(product_id, name=None, description=None, price=None):
+    async with db.pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "UPDATE products "
+            "SET name = COALESCE($2, name), "
+            "description = COALESCE($3, description), "
+            "price = COALESCE($4, price) "
+            "WHERE id = $1 "
+            "RETURNING id, name, description, price",
+            product_id, name, description, price,
+        )
+    return dict(row) if row else None

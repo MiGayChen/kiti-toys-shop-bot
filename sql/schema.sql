@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS orders (
 CREATE TABLE IF NOT EXISTS order_items (
     id         INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     order_id   INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    product_id INTEGER REFERENCES products(id) ON DELETE SET NULL,
     name       TEXT NOT NULL,
     price      INTEGER NOT NULL CHECK (price >= 0),
     qty        INTEGER NOT NULL CHECK (qty > 0)

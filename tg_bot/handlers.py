@@ -2,12 +2,20 @@ import logging
 
 from telegram import Update
 from telegram.ext import ContextTypes
+from telegram.error import BadRequest
 
 from core import repository
 from core.config import OWNER_ID
 from core.texts import WELCOME, CHOOSE_CATEGORY, CHOOSE_PRODUCT, PRODUCT_NOT_FOUND, ADDED_TO_CART, CART_EMPTY, CART_CLEARED, ORDER_CREATED, OWNER_NEW_ORDER, MAIN_MENU, HELP_TEXT, CATEGORY_EMPTY
 from core.formatting import format_products_list, format_product_card, format_cart, format_price
 from tg_bot.keyboards import categories_keyboard, products_keyboard, product_card_keyboard, cart_keyboard, main_menu_keyboard, back_to_menu_keyboard
+
+async def edit_or_send(query, text, reply_markup):
+    if query.message.photo:
+        await query.message.delete()
+        await query.message.chat.send_message(text, reply_markup=reply_markup)
+    else:
+        await query.edit_message_text(text, reply_markup=reply_markup)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
@@ -38,13 +46,13 @@ async def show_products(update, context):
     category_id = int(query.data.split(":")[1])
     products = await repository.get_products(category_id)
     if not products:
-        await query.edit_message_text(CATEGORY_EMPTY, reply_markup=products_keyboard(products))
+        await edit_or_send(query, CATEGORY_EMPTY, products_keyboard(products))
         return
 
     text = CHOOSE_PRODUCT + "\n\n" + format_products_list(products)
     keyboard = products_keyboard(products)
 
-    await query.edit_message_text(text, reply_markup=keyboard)
+    await edit_or_send(query, text, keyboard)
 
 async def back_to_categories(update, context):
     query = update.callback_query
@@ -63,12 +71,24 @@ async def show_product_card(update, context):
     product = await repository.get_product(product_id)
 
     if product is None:
-        await query.edit_message_text(PRODUCT_NOT_FOUND)
+        await edit_or_send(query, PRODUCT_NOT_FOUND, None)
         return
 
     text = format_product_card(product)
     keyboard = product_card_keyboard(product["id"], product["category_id"])
-    await query.edit_message_text(text, reply_markup=keyboard)
+
+    if product["image"]:
+        try:
+            await query.message.chat.send_photo(
+                product["image"], caption=text, reply_markup=keyboard,
+            )
+        except BadRequest:
+            logging.exception("Не удалось отправить фото товара")
+        else:
+            await query.message.delete()
+            return
+
+    await edit_or_send(query, text, keyboard)
 
 async def add_to_cart_button(update, context):
     query = update.callback_query
@@ -95,11 +115,10 @@ async def show_cart(update, context):
     items = await repository.get_cart(user_id)
 
     if not items:
-        await query.edit_message_text(CART_EMPTY, reply_markup=cart_keyboard(False))
+        await edit_or_send(query, CART_EMPTY, cart_keyboard(False))
         return
 
-    await query.edit_message_text(format_cart(items), reply_markup=cart_keyboard(True))
-
+    await edit_or_send(query, format_cart(items), cart_keyboard(True))
 
 async def clear_cart_button(update, context):
     query = update.callback_query

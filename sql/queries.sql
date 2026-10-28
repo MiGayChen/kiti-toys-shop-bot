@@ -162,3 +162,12 @@ RETURNING id, name, description, price;
 DELETE FROM products
 WHERE id = 1
 RETURNING id, name;
+
+
+-- set_product_image(product_id, image): сохранить фото товара (Telegram file_id) или убрать его
+-- image = NULL убирает фото
+-- Если товара нет, вернётся 0 строк (в Python это None)
+UPDATE products
+SET image = 'file_id_для_примера'
+WHERE id = 2
+RETURNING id, name, image;

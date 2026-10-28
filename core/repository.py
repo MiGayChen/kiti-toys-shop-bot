@@ -226,7 +226,7 @@ async def delete_category(category_id):
 async def get_product_admin(product_id):
     async with db.pool.acquire() as conn:
         row = await conn.fetchrow(
-            "SELECT id, category_id, name, description, price, is_active "
+            "SELECT id, category_id, name, description, price, image, is_active "
             "FROM products WHERE id = $1",
             product_id,
         )
@@ -254,5 +254,16 @@ async def delete_product(product_id):
             "WHERE id = $1 "
             "RETURNING id, name",
             product_id,
+        )
+    return dict(row) if row else None
+
+
+async def set_product_image(product_id, image):
+    async with db.pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "UPDATE products SET image = $2 "
+            "WHERE id = $1 "
+            "RETURNING id, name, image",
+            product_id, image,
         )
     return dict(row) if row else None

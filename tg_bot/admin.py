@@ -70,10 +70,15 @@ from core.texts import (
     BUT_ADMIN_DELETE_PRODUCT,
     PROD_DELETE_PICK,
     PROD_DELETE_CONFIRM,
-    PROD_DELETE_DONE,
+    PROD_DELETE_DONE, 
+    ADD_ASK_PHOTO, 
+    ADD_BAD_PHOTO, 
+    BUT_SKIP, 
+    ADD_PHOTO_YES, 
+    ADD_PHOTO_NO,
 )
 
-NAME, DESCRIPTION, PRICE, CATEGORY, CONFIRM = range(5)
+NAME, DESCRIPTION, PRICE, CATEGORY, PHOTO, CONFIRM = range(6)
 
 def is_admin(update):
     user = update.effective_user
@@ -171,6 +176,22 @@ def confirm_keyboard():
     return InlineKeyboardMarkup(rows)
 
 
+def photo_keyboard():
+    rows = [
+        [InlineKeyboardButton(BUT_SKIP, callback_data="admin:skipphoto")],
+        [InlineKeyboardButton(BUT_CANCEL, callback_data="admin:cancel")],
+    ]
+    return InlineKeyboardMarkup(rows)
+
+
+def confirm_text(data):
+    photo_line = ADD_PHOTO_YES if data.get("image") else ADD_PHOTO_NO
+    text = ADD_CONFIRM.format(
+        card=format_product_card(data),
+        category=data["category_name"],
+    )
+    return text + "\n" + photo_line
+
 async def add_start(update, context):
     query = update.callback_query
     await query.answer()
@@ -244,14 +265,46 @@ async def add_category(update, context):
     await query.answer()
     data = context.user_data["new_product"]
     data["category_id"] = category["id"]
+    data["category_name"] = category["name"]
+    await query.edit_message_text(ADD_ASK_PHOTO, reply_markup=photo_keyboard())
+    return PHOTO
 
-    text = ADD_CONFIRM.format(
-        card=format_product_card(data),
-        category=category["name"],
-    )
-    await query.edit_message_text(text, reply_markup=confirm_keyboard())
+async def add_photo(update, context):
+    if not is_admin(update):
+        return ConversationHandler.END
+
+    data = context.user_data.get("new_product")
+    if data is None:
+        await update.message.reply_text(ADD_CANCELLED, reply_markup=panel_keyboard())
+        return ConversationHandler.END
+
+    data["image"] = update.message.photo[-1].file_id
+    await update.message.reply_text(confirm_text(data), reply_markup=confirm_keyboard())
     return CONFIRM
 
+
+async def add_photo_bad(update, context):
+    if not is_admin(update):
+        return ConversationHandler.END
+
+    await update.message.reply_text(ADD_BAD_PHOTO, reply_markup=photo_keyboard())
+    return PHOTO
+
+
+async def add_skip_photo(update, context):
+    query = update.callback_query
+    await query.answer()
+    if not is_admin(update):
+        return ConversationHandler.END
+
+    data = context.user_data.get("new_product")
+    if data is None:
+        await query.edit_message_text(ADD_CANCELLED, reply_markup=panel_keyboard())
+        return ConversationHandler.END
+
+    data["image"] = None
+    await query.edit_message_text(confirm_text(data), reply_markup=confirm_keyboard())
+    return CONFIRM
 
 async def add_save(update, context):
     query = update.callback_query
@@ -266,6 +319,7 @@ async def add_save(update, context):
 
     product_id = await repository.add_product(
         data["category_id"], data["name"], data["description"], data["price"],
+        data.get("image"),
     )
     await query.edit_message_text(
         ADD_DONE.format(product_id=product_id),
@@ -294,6 +348,11 @@ def add_product_conversation():
             DESCRIPTION: [MessageHandler(text_filter, add_description)],
             PRICE: [MessageHandler(text_filter, add_price)],
             CATEGORY: [CallbackQueryHandler(add_category, pattern="^admin:cat:")],
+            PHOTO: [
+                MessageHandler(filters.PHOTO, add_photo),
+                CallbackQueryHandler(add_skip_photo, pattern="^admin:skipphoto$"),
+                MessageHandler(~filters.PHOTO & ~filters.COMMAND, add_photo_bad),
+            ],
             CONFIRM: [CallbackQueryHandler(add_save, pattern="^admin:save$")],
         },
         fallbacks=[

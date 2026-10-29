@@ -1,5 +1,6 @@
 import re
 from core.texts import CART_TITLE, CART_TOTAL, ORDER_STATUS_LABELS, ORDER_CARD_HEAD
+from core.config import SHOP_TIMEZONE
 
 def format_price(price):
 	rub, kop = divmod(price, 100)
@@ -45,7 +46,7 @@ def format_order(order, items):
         order_id=order["id"],
         status=ORDER_STATUS_LABELS.get(order["status"], order["status"]),
         name=order["name"] or "—",
-        created=order["created_at"].astimezone().strftime("%d.%m.%Y %H:%M"),
+        created=order["created_at"].astimezone(SHOP_TIMEZONE).strftime("%d.%m.%Y %H:%M"),
     )
     lines = [head, ""]
     for item in items:

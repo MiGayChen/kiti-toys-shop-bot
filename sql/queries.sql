@@ -171,3 +171,10 @@ UPDATE products
 SET image = 'file_id_для_примера'
 WHERE id = 2
 RETURNING id, name, image;
+
+
+-- add_product(category_id, name, description, price, image): добавить товар, вернуть его id
+-- image = NULL: товар без фото, иначе сюда попадает Telegram file_id
+INSERT INTO products (category_id, name, description, price, image)
+VALUES (1, 'Тест', 'Тестовый товар', 100, NULL)
+RETURNING id;

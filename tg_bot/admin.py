@@ -76,6 +76,11 @@ from core.texts import (
     BUT_SKIP, 
     ADD_PHOTO_YES, 
     ADD_PHOTO_NO,
+    BUT_EDIT_PHOTO, 
+    PROD_EDIT_ASK_PHOTO, 
+    BUT_REMOVE_PHOTO, 
+    PROD_PHOTO_DONE, 
+    PROD_PHOTO_REMOVED,
 )
 
 NAME, DESCRIPTION, PRICE, CATEGORY, PHOTO, CONFIRM = range(6)
@@ -674,7 +679,7 @@ async def delete_category_yes(update, context):
         reply_markup=panel_keyboard(),
     )
 
-EDIT_PICK, EDIT_FIELD, EDIT_VALUE = range(3)
+EDIT_PICK, EDIT_FIELD, EDIT_VALUE, EDIT_PHOTO = range(4)
 
 EDIT_ASK = {
     "name": PROD_EDIT_ASK_NAME,
@@ -698,10 +703,17 @@ def edit_field_keyboard():
         [InlineKeyboardButton(BUT_EDIT_NAME, callback_data="admin:editfield:name")],
         [InlineKeyboardButton(BUT_EDIT_DESC, callback_data="admin:editfield:description")],
         [InlineKeyboardButton(BUT_EDIT_PRICE, callback_data="admin:editfield:price")],
+        [InlineKeyboardButton(BUT_EDIT_PHOTO, callback_data="admin:editfield:photo")],
         [InlineKeyboardButton(BUT_CANCEL, callback_data="admin:cancel")],
     ]
     return InlineKeyboardMarkup(rows)
 
+def edit_photo_keyboard():
+    rows = [
+        [InlineKeyboardButton(BUT_REMOVE_PHOTO, callback_data="admin:editphoto_remove")],
+        [InlineKeyboardButton(BUT_CANCEL, callback_data="admin:cancel")],
+    ]
+    return InlineKeyboardMarkup(rows)
 
 async def edit_start(update, context):
     query = update.callback_query
@@ -742,6 +754,10 @@ async def edit_field(update, context):
         return ConversationHandler.END
 
     field = query.data.split(":")[2]
+    if field == "photo":
+        await query.answer()
+        await query.edit_message_text(PROD_EDIT_ASK_PHOTO, reply_markup=edit_photo_keyboard())
+        return EDIT_PHOTO
     if field not in EDIT_ASK:
         await query.answer()
         return EDIT_FIELD
@@ -792,6 +808,55 @@ async def edit_value(update, context):
     )
     return ConversationHandler.END
 
+async def edit_photo(update, context):
+    if not is_admin(update):
+        return ConversationHandler.END
+
+    product_id = context.user_data.get("edit_product_id")
+    if product_id is None:
+        await update.message.reply_text(PROD_EDIT_CANCELLED, reply_markup=panel_keyboard())
+        return ConversationHandler.END
+
+    file_id = update.message.photo[-1].file_id
+    product = await repository.set_product_image(product_id, file_id)
+    context.user_data.pop("edit_product_id", None)
+    context.user_data.pop("edit_field", None)
+    if product is None:
+        await update.message.reply_text(PRODUCT_NOT_FOUND, reply_markup=panel_keyboard())
+        return ConversationHandler.END
+
+    await update.message.reply_text(PROD_PHOTO_DONE, reply_markup=panel_keyboard())
+    return ConversationHandler.END
+
+
+async def edit_photo_remove(update, context):
+    query = update.callback_query
+    await query.answer()
+    if not is_admin(update):
+        return ConversationHandler.END
+
+    product_id = context.user_data.get("edit_product_id")
+    if product_id is None:
+        await query.edit_message_text(PROD_EDIT_CANCELLED, reply_markup=panel_keyboard())
+        return ConversationHandler.END
+
+    product = await repository.set_product_image(product_id, None)
+    context.user_data.pop("edit_product_id", None)
+    context.user_data.pop("edit_field", None)
+    if product is None:
+        await query.edit_message_text(PRODUCT_NOT_FOUND, reply_markup=panel_keyboard())
+        return ConversationHandler.END
+
+    await query.edit_message_text(PROD_PHOTO_REMOVED, reply_markup=panel_keyboard())
+    return ConversationHandler.END
+
+
+async def edit_photo_bad(update, context):
+    if not is_admin(update):
+        return ConversationHandler.END
+
+    await update.message.reply_text(ADD_BAD_PHOTO, reply_markup=edit_photo_keyboard())
+    return EDIT_PHOTO
 
 async def edit_cancel(update, context):
     if not is_admin(update):
@@ -813,6 +878,11 @@ def edit_product_conversation():
             EDIT_PICK: [CallbackQueryHandler(edit_pick, pattern="^admin:editprod:")],
             EDIT_FIELD: [CallbackQueryHandler(edit_field, pattern="^admin:editfield:")],
             EDIT_VALUE: [MessageHandler(text_filter, edit_value)],
+            EDIT_PHOTO: [
+                MessageHandler(filters.PHOTO, edit_photo),
+                CallbackQueryHandler(edit_photo_remove, pattern="^admin:editphoto_remove$"),
+                MessageHandler(~filters.PHOTO & ~filters.COMMAND, edit_photo_bad),
+            ],
         },
         fallbacks=[
             CommandHandler("cancel", edit_cancel),

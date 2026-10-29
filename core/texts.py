@@ -191,3 +191,13 @@ BUT_SKIP = "Пропустить"
 ADD_PHOTO_YES = "Фото: есть"
 
 ADD_PHOTO_NO = "Фото: нет"
+
+BUT_EDIT_PHOTO = "Фото"
+
+PROD_EDIT_ASK_PHOTO = "Пришлите новое фото (как фото, не файлом), нажмите «Убрать фото» или «Отмена»:"
+
+BUT_REMOVE_PHOTO = "Убрать фото"
+
+PROD_PHOTO_DONE = "Фото товара обновлено."
+
+PROD_PHOTO_REMOVED = "Фото товара убрано."

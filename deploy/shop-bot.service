@@ -1,0 +1,19 @@
+[Unit]
+Description=Telegram shop bot (kiti toys)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=shopbot
+Group=shopbot
+WorkingDirectory=/opt/shop-bot
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/shop-bot/.venv/bin/python main.py tg
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

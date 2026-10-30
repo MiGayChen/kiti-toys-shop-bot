@@ -38,7 +38,7 @@ sudo -u postgres psql -c "CREATE DATABASE kiti_toys_base OWNER kiti_toys_role;"
 psql -h localhost -U kiti_toys_role -d kiti_toys_base -f sql/schema.sql
 ```
 
-Тестовые данные (только в пустую базу, команда очищает таблицы товаров):
+Тестовые данные (только в пустую базу; повторный запуск завершится ошибкой и ничего не изменит):
 
 ```
 psql -h localhost -U kiti_toys_role -d kiti_toys_base -f sql/seed.sql

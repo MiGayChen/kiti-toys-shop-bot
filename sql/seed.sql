@@ -1,4 +1,4 @@
-TRUNCATE cart_items, products, categories RESTART IDENTITY;
+BEGIN;
 
 INSERT INTO categories (name) VALUES ('Мячики'), ('Мышки');
 
@@ -11,3 +11,4 @@ INSERT INTO products (category_id, name, description, price, image) VALUES
 	'Плюшевая мышка', 'Мягкая мышка с кошачьей мятой', 29900, NULL),
 ((SELECT id FROM categories WHERE name = 'Мышки'), 
 	'Мышка с колокольчиком', 'Легкая Мышка, внутри звенит колокольчик.', 29900, NULL);
+COMMIT;
